@@ -1,6 +1,6 @@
 import pandas as pd
 import itertools
-from utils import WORK_FOR, read_annotations, read_lines, ENTITIES_TYPE
+from utils import read_lines, ENTITIES_TYPE
 import sys
 import spacy
 
@@ -54,15 +54,6 @@ def dependency_path(ent1, ent2):
 
 
 nlp = spacy.load('en_core_web_lg')
-annotations = read_annotations(sys.argv[2])
-
-c = 0
-for sent_id, annots in annotations.items():
-    for a in annots:
-        if a[1] == WORK_FOR:
-            # print(f'{sent_id} {ann}')
-            c+=1
-print(f'{WORK_FOR} annotations: {c}')
 
 df = pd.DataFrame()
 for sent_id, sent_str in tqdm(read_lines(sys.argv[1])):
