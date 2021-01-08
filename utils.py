@@ -1,18 +1,23 @@
-CORPUS = 'corpus'
-ANNOTATIONS = 'annotations'
-PROCESSED_CORPUS = 'processed_corpus'
+import codecs
+from collections import defaultdict
 
-LIVE_IN = 'Live_In'
 WORK_FOR = 'Work_For'
+ENTITIES_TYPE = ['PERSON', 'ORG']
 
-ID = 'ID'
-FORM = 'FORM'
-LEMMA = 'LEMMA'
-POSTAG = 'POSTAG'
-NETAG = 'NETAG'
-HEAD = 'HEAD'
-DEPREL = 'DEPREL'
-ENTIBO = 'ENTIBO'
-ENTTYPE = 'ENTTYPE'
 
-FIELDS_H = [ID, FORM, LEMMA, POSTAG, NETAG, HEAD, DEPREL, ENTIBO, ENTTYPE]
+def read_lines(fname):
+    sentences = []
+    for line in codecs.open(fname, encoding="utf8"):
+        sent_id, sent = line.strip().split("\t")
+        sent = sent.replace("-LRB-","(")
+        sent = sent.replace("-RRB-",")")
+        sentences.append((sent_id, sent))
+    return sentences
+
+
+def read_annotations(fname):
+    annotations = defaultdict(lambda: [])
+    for line in codecs.open(fname, encoding="utf8"):
+        sent_id, arg1, rel, arg2 = line.strip().split("\t")[0:4]
+        annotations[sent_id].append((arg1, rel, arg2))
+    return annotations

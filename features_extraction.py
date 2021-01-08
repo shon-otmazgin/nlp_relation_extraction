@@ -1,23 +1,12 @@
 import pandas as pd
 import itertools
-
-from spacy.tokens.span import defaultdict
-
-from utils import CORPUS, ANNOTATIONS, PROCESSED_CORPUS, LIVE_IN, WORK_FOR, FIELDS_H, ENTTYPE, FORM, ENTIBO, HEAD, \
-    LEMMA, ID, DEPREL
+from utils import WORK_FOR, read_annotations, read_lines, ENTITIES_TYPE
 import sys
-import numpy as np
 import spacy
-import codecs
+
 from tqdm import tqdm
 
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
-
-
-def pairwise(iterable):
-    "s -> (s0, s1), (s2, s3), (s4, s5), ..."
-    a = iter(iterable)
-    return zip(a, a)
 
 
 def extract_features(ent1, ent2, sent, sent_id):
@@ -64,39 +53,18 @@ def dependency_path(ent1, ent2):
     return dep_path
 
 
-def read_lines(fname):
-    sentences = []
-    for line in codecs.open(fname, encoding="utf8"):
-        sent_id, sent = line.strip().split("\t")
-        sent = sent.replace("-LRB-","(")
-        sent = sent.replace("-RRB-",")")
-        sentences.append((sent_id, sent))
-    return sentences
-
-
-def read_annotations(fname):
-    annotations = defaultdict(lambda: [])
-    for line in codecs.open(fname, encoding="utf8"):
-        sent_id, arg1, rel, arg2 = line.strip().split("\t")[0:4]
-        annotations[sent_id].append((arg1, rel, arg2))
-    return annotations
-
-
 nlp = spacy.load('en_core_web_lg')
-
-ENTITIES_TYPE = ['PERSON', 'ORG']
-
-train_annotations = read_annotations(sys.argv[2])
+annotations = read_annotations(sys.argv[2])
 
 c = 0
-for sent_id, annotations in train_annotations.items():
-    for ann in annotations:
-        if ann[1] == WORK_FOR:
+for sent_id, annots in annotations.items():
+    for a in annots:
+        if a[1] == WORK_FOR:
             # print(f'{sent_id} {ann}')
             c+=1
-print(f'train {WORK_FOR} annotations: {c}')
+print(f'{WORK_FOR} annotations: {c}')
 
-train_df = pd.DataFrame()
+df = pd.DataFrame()
 for sent_id, sent_str in tqdm(read_lines(sys.argv[1])):
     sent = nlp(sent_str)
     for ent1, ent2 in itertools.combinations(sent.ents, 2):
@@ -107,9 +75,12 @@ for sent_id, sent_str in tqdm(read_lines(sys.argv[1])):
         if ent1.root.ent_type_ == ent2.root.ent_type_:
             continue
         features = extract_features(ent1, ent2, sent, sent_id)
-        train_df = train_df.append(features)
+        df = df.append(features)
+df = pd.get_dummies(df, columns=['concat_type', 'ent1_type', 'ent2_type'])
 
-train_df = pd.get_dummies(train_df, columns=['concat_type', 'ent1_type', 'ent2_type'])
+print(f'dataframe size to pickle: {df.shape}')
+df.to_pickle("df.pkl")
+print(f'dataframe saved as: df.pkl')
 
-print(train_df.shape)
+
 
