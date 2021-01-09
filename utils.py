@@ -19,5 +19,7 @@ def read_annotations(fname):
     annotations = defaultdict(lambda: [])
     for line in codecs.open(fname, encoding="utf8"):
         sent_id, arg1, rel, arg2 = line.strip().split("\t")[0:4]
+        if rel != WORK_FOR:
+            continue
         annotations[sent_id].append((arg1, rel, arg2))
     return annotations
