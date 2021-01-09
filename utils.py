@@ -3,7 +3,7 @@ from collections import defaultdict
 
 WORK_FOR = 'Work_For'
 ENTITIES_TYPE = ['PERSON', 'ORG']
-
+stop_words = ['the', "'s"]
 
 def read_lines(fname):
     sentences = []

@@ -2,7 +2,7 @@ import codecs
 import spacy
 import sys
 
-nlp = spacy.load('en_core_web_sm')
+nlp = spacy.load('en_core_web_lg')
 
 def read_lines(fname):
     for line in codecs.open(fname, encoding="utf8"):
@@ -12,7 +12,7 @@ def read_lines(fname):
         yield sent_id, sent
 
 for sent_id, sent_str in read_lines(sys.argv[1]):
-    if sent_id != 'sent52':
+    if sent_id != 'sent667':
         continue
     sent = nlp(sent_str)
     print(f"#id: {sent_id}")
