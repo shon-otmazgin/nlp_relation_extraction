@@ -13,8 +13,8 @@ with open('train.pkl', 'rb') as f:
 with open('dev.pkl', 'rb') as f:
     X_test, y_test = pickle.load(f)
 
-lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.1).fit(X, y)
-svm_clf = SVC(kernel='linear', random_state=42, C=0.1).fit(X, y)
+lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.01).fit(X, y)
+svm_clf = SVC(kernel='linear', random_state=42, C=0.01).fit(X, y)
 
 y_pred = lr_clf.predict(X)
 print('TRAIN')
@@ -32,11 +32,11 @@ y_pred = svm_clf.predict(X_test)
 print('DEV')
 print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
 
-X_test['y'] = y_test
-X_test['y_pred'] = y_pred
-
-# precision calc
-# print(X_test[(X_test['y_pred'] == 1) & (X_test['y'] == 1)].shape[0] / X_test[X_test['y_pred'] == 1].shape[0])
-
-for idx in X_test[(X_test['y_pred'] == 1) & (X_test['y'] == 1)].head().index:
-    print(idx)
+# X_test['y'] = y_test
+# X_test['y_pred'] = y_pred
+#
+# # precision calc
+# # print(X_test[(X_test['y_pred'] == 1) & (X_test['y'] == 1)].shape[0] / X_test[X_test['y_pred'] == 1].shape[0])
+#
+# for idx in X_test[(X_test['y_pred'] == 1) & (X_test['y'] == 1)].head().index:
+#     print(idx)
