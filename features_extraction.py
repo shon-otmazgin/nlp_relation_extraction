@@ -55,6 +55,9 @@ def extract_features(ent1, ent2, sent):
 
     features['words_between'] = words_between(ent1, ent2, sent)
 
+    # features['ent1_pos'] = ent1.root.tag_
+    # features['ent2_pos'] = ent2.root.tag_
+
     # NER FEATURES
     # features['ent1_type'] = ent1.root.ent_type_
     # features['ent2_type'] = ent2.root.ent_type_

@@ -4,33 +4,44 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 import pandas as pd
 import pickle
+from sklearn.model_selection import KFold
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
 
 
 with open('train.pkl', 'rb') as f:
     X, y = pickle.load(f)
 
+
+kf = KFold(n_splits=10)
+X = X.to_numpy()
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+
+    lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.01).fit(X_train, y_train)
+    svm_clf = SVC(kernel='linear', random_state=42, C=0.01).fit(X_train, y_train)
+
+    y_pred = lr_clf.predict(X_test)
+    print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
+
 with open('dev.pkl', 'rb') as f:
     X_test, y_test = pickle.load(f)
 
-lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.01).fit(X, y)
-svm_clf = SVC(kernel='linear', random_state=42, C=0.01).fit(X, y)
-
-y_pred = lr_clf.predict(X)
-print('TRAIN')
-print(f'P={precision_score(y, y_pred):.3f}, R={recall_score(y, y_pred):.3f}, F={f1_score(y, y_pred):.3f}')
-
-y_pred = lr_clf.predict(X_test)
-print('DEV')
-print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
-
-y_pred = svm_clf.predict(X)
-print('TRAIN')
-print(f'P={precision_score(y, y_pred):.3f}, R={recall_score(y, y_pred):.3f}, F={f1_score(y, y_pred):.3f}')
-
-y_pred = svm_clf.predict(X_test)
-print('DEV')
-print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
+# y_pred = lr_clf.predict(X)
+# print('TRAIN')
+# print(f'P={precision_score(y, y_pred):.3f}, R={recall_score(y, y_pred):.3f}, F={f1_score(y, y_pred):.3f}')
+#
+# y_pred = lr_clf.predict(X_test)
+# print('DEV')
+# print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
+#
+# y_pred = svm_clf.predict(X)
+# print('TRAIN')
+# print(f'P={precision_score(y, y_pred):.3f}, R={recall_score(y, y_pred):.3f}, F={f1_score(y, y_pred):.3f}')
+#
+# y_pred = svm_clf.predict(X_test)
+# print('DEV')
+# print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
 
 # X_test['y'] = y_test
 # X_test['y_pred'] = y_pred
