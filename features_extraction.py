@@ -30,18 +30,25 @@ def words_between(ent1, ent2, sent):
         sent[ent1.end:ent2.start]) > 0 else set(['<EMPTY>'])
     return words
 
+# def phrase_chunking(sent):
+#     np_chunks = [np for np in sent.noun_chunks]
+#     for w in sent:
+#         print(w, ent='')
+#         for np in np_chunks:
+#             if w in np:
+#                 print( 'NP', end='')
+#                 break
+#         print()
+
 def extract_features(ent1, ent2, sent):
     features = {}
 
     # WORDS FEATURES
-    features['ent1_head'] = ent1.root.text
-    features['ent2_head'] = ent2.root.text
-    features['ent1_ent2_head'] = ent1.root.text + " " + ent2.root.text
+    # features['ent1_head'] = ent1.root.text
+    # features['ent2_head'] = ent2.root.text
+    # features['ent1_ent2_head'] = ent1.root.text + " " + ent2.root.text
 
-    features['bow_bigram_ent1_ent2'] = set([w.text for w in ent1] +
-                                           [w.text for w in ent2] +
-                                           [ent1[i:i+2].text for i in range(len(ent1)-2+1)] +
-                                           [ent2[i:i+2].text for i in range(len(ent2)-2+1)])
+    features['bow_ent1_ent2'] = set([w.text for w in ent1] + [w.text for w in ent2])
 
     features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
     features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
@@ -49,10 +56,12 @@ def extract_features(ent1, ent2, sent):
     features['words_between'] = words_between(ent1, ent2, sent)
 
     # NER FEATURES
-    features['ent1_type'] = ent1.root.ent_type_
-    features['ent2_type'] = ent2.root.ent_type_
-    features['ent1_ent2_type'] = ent1.root.ent_type_ + " " + ent2.root.ent_type_
+    # features['ent1_type'] = ent1.root.ent_type_
+    # features['ent2_type'] = ent2.root.ent_type_
+    # features['ent1_ent2_type'] = ent1.root.ent_type_ + " " + ent2.root.ent_type_
     features['dep_path'] = dependency_path(ent1, ent2)
+
+    # phrase_chunking(sent)
 
     return features
 
