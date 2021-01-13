@@ -7,34 +7,40 @@ import numpy as np
 import pickle
 from sklearn.feature_extraction import DictVectorizer
 import stanza
+from spacy_stanza import StanzaLanguage
 import string
+
 
 from tqdm import tqdm
 
+
+
+
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
+
 
 def get_before_after(ent, sent):
     before = '<START>'
-    for i in range(1, sent.num_words):
-        if ent.words[0].id - i - 1 > 0 and sent.sentences[0].words[ent.words[0].id - i - 1].text not in string.punctuation:
-            before = sent.sentences[0].words[ent.words[0].id - i - 1].text
+    for i in range(1, len(sent)):
+        if ent.start - i > 0 and not sent[ent.start - i].is_punct:
+            before = sent[ent.start - i].text
             break
 
     after = '<END>'
-    for i in range(sent.num_words):
-        if ent.words[-1].id + i < sent.num_words and sent.sentences[0].words[ent.words[-1].id + i].text not in string.punctuation:
-            after = sent.sentences[0].words[ent.words[-1].id + i].text
+    for i in range(len(sent)):
+        if ent.end + i < len(sent) and not sent[ent.end + i].is_punct:
+            after = sent[ent.end + i].text
             break
     return before, after
 
 
 def words_between(ent1, ent2, sent):
-    if ent1.words[0].id > ent2.words[0].id:
-        words_bw = sent.sentences[0].words[ent2.words[-1].id:ent1.words[0].id - 1]
+    if ent1.end < ent1.start:
+        words_bw = set([w.text for w in sent[ent1.end:ent2.start] if not w.is_punct])
     else:
-        words_bw = sent.sentences[0].words[ent1.words[-1].id:ent2.words[0].id - 1]
+        words_bw = set([w.text for w in sent[ent2.end:ent1.start] if not w.is_punct])
     if words_bw:
-        return set([w.text for w in words_bw if w.text not in string.punctuation])
+        return words_bw
     else:
         return set(['<EMPTY>'])
 
@@ -47,7 +53,7 @@ def extract_features(ent1, ent2, sent):
     # features['ent2_head'] = ent2.root.text
     # features['ent1_ent2_head'] = ent1.root.text + " " + ent2.root.text
 
-    features['bow_ent1_ent2'] = set([w.text for w in ent1.tokens] + [w.text for w in ent2.tokens])
+    features['bow_ent1_ent2'] = set([w.text for w in ent1] + [w.text for w in ent2])
 
     features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
     features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
@@ -67,6 +73,10 @@ def extract_features(ent1, ent2, sent):
 
 
 def dependency_path(ent1, ent2):
+    # print(*[
+    #     f'id: {word.id}\tword: {word.text}\thead id: {word.head}\thead: {sent.words[word.head - 1].text if word.head > 0 else "root"}\tdeprel: {word.deprel}'
+    #     for sent in doc.sentences for word in sent.words], sep='\n')
+
     ent1_path = []
     tok = ent1.root
     while tok.dep_ != 'ROOT':
@@ -102,19 +112,23 @@ def get_y(file, df):
 
 
 def build_df(file, v=None):
-    # nlp = spacy.load('en_core_web_lg')
-    nlp = stanza.Pipeline(lang='en', processors='tokenize,pos,lemma,depparse,ner', tokenize_pretokenized=True)
+    # spa_nlp = spacy.load('en_core_web_lg')
+    stanza.download('en')
+    # nlp = stanza.Pipeline(lang='en', processors='tokenize,pos,lemma,depparse,ner', tokenize_pretokenized=True)
+
+    snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
+    nlp = StanzaLanguage(snlp)
 
     E = []
     F = []
     indices = [[], [], [], []]
     for sent_id, sent_str in tqdm(read_lines(file)):
-        if sent_id == 'sent95':
-            print('aaa')
-        # sent = nlp(sent_str)
-        sent = nlp(sent_str, )
-        persons = [ent for ent in sent.ents if ent.type == 'PERSON']
-        orgs = [ent for ent in sent.ents if ent.type == 'ORG']
+        # if sent_id == 'sent420':
+        #     print('aaa')
+        # spa_sent = spa_nlp(sent_str)
+        sent = nlp(sent_str)
+        persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
+        orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
         for p, o in itertools.product(persons, orgs):
             features = extract_features(p, o, sent)
             F.append(features)
