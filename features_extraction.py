@@ -10,7 +10,8 @@ import stanza
 from spacy_stanza import StanzaLanguage
 import string
 from tqdm import tqdm
-
+from sklearn.feature_extraction.text import CountVectorizer
+from spacy.vocab import Vocab
 stanza.download('en')
 
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
@@ -56,23 +57,20 @@ def extract_features(ent1, ent2, sent):
 
 
 def dependency_path(ent1, ent2):
-    ent1_path = []
-    tok = ent1.root
-    while tok.dep_ != 'ROOT':
-        ent1_path.append(tok.text)
-        ent1_path.append('IN' + "_" + tok.dep_)
-        tok = tok.head
-
-    ent2_path = []
-    tok = ent2.root
-    while True:
-        ent2_path.insert(0, tok.text)
-        if tok.dep_ == 'ROOT':
+    ent1_path, ent2_path = [], []
+    tok1, tok2 = ent1.root, ent2.root
+    while tok1.dep_ != 'root' or tok2.dep_ != 'root':
+        if tok1.dep_ != 'root':
+            ent1_path.append(tok1.text)
+            ent1_path.append(tok1.dep_)
+            tok1 = tok1.head
+        if tok2.dep_ != 'root':
+            ent2_path.append(tok2.text)
+            ent2_path.append(tok2.dep_)
+            tok2 = tok2.head
+        if tok1 == tok2:
             break
-        ent2_path.insert(0, 'OUT' + "_" + tok.dep_)
-        tok = tok.head
-
-    return ent1_path + ent2_path
+    return ent1_path + [tok1.text] + ent2_path[::-1] if ent1.start < ent2.start else ent2_path + [tok1.text] + ent1_path[::-1]
 
 
 def get_y(file, df):
@@ -90,54 +88,46 @@ def get_y(file, df):
     return y
 
 
-from sklearn.feature_extraction.text import CountVectorizer
-
-
-# def features2vectors(F, V):
-#   ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
-#   before_ent1 = [f['before_ent1'] for f in F]
-#   after_ent2 = [f['after_ent2'] for f in F]
-#   wb_bow = [' '.join(f['words_between']) for f in F]
-#   dep_path_bow = [' '.join(f['dep_path']) for f in F]
-
-#   if not V:
-#     ent1_ent2_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(ent1_ent2_bow)
-#     before_ent1_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(before_ent1)
-#     after_ent2_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(after_ent2)
-#     wb_bow_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(wb_bow)
-#     dep_path_bow_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(2,3)).fit(dep_path_bow)
-#   else:
-#     ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow = V
-
-#   return np.hstack([ent1_ent2_v.transform(ent1_ent2_bow).toarray(), 
-#                     before_ent1_v.transform(before_ent1).toarray(), 
-#                     after_ent2_v.transform(after_ent2).toarray(), 
-#                     wb_bow_v.transform(wb_bow).toarray(),
-#                     dep_path_bow_v.transform(dep_path_bow).toarray()]), (ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v)
-
 def features2vectors(F, V):
     ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
     before_ent1 = [f['before_ent1'] for f in F]
     after_ent2 = [f['after_ent2'] for f in F]
     wb_bow = [' '.join(f['words_between']) for f in F]
+    dep_path_bow = [' '.join(f['dep_path']) for f in F]
 
     if not V:
         ent1_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(ent1_ent2_bow)
         before_ent1_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(before_ent1)
         after_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(after_ent2)
         wb_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(wb_bow)
+        dep_path_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(2, 4)).fit(dep_path_bow)
     else:
-        ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v = V
+        ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v = V
 
     return np.hstack([ent1_ent2_v.transform(ent1_ent2_bow).toarray(),
                       before_ent1_v.transform(before_ent1).toarray(),
                       after_ent2_v.transform(after_ent2).toarray(),
-                      wb_bow_v.transform(wb_bow).toarray()]), (ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v)
+                      wb_bow_v.transform(wb_bow).toarray(),
+                      dep_path_bow_v.transform(dep_path_bow).toarray()]), (
+           ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v)
+
+
+def get_vectors():
+    def load_embeddings():
+        df = pd.read_csv('data/deps.words', sep=' ', index_col=0)
+        return list(df.index), np.array(df.values)
+
+    vocab = Vocab()
+    for word, vector in load_embeddings():
+        vocab.set_vector(word, vector)
+    return vocab
+
 
 
 def build_df(file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
+    vocab = get_vectors()
 
     E = []
     F = []
@@ -146,7 +136,7 @@ def build_df(file, V=None):
         # if sent_id == 'sent95':
         #     print('aaa')
         # sent = nlp(sent_str)
-        sent = nlp(sent_str, )
+        sent = nlp(sent_str)
         persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
         orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
         for p, o in itertools.product(persons, orgs):
