@@ -9,30 +9,28 @@ from sklearn.model_selection import KFold
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
 
 
-with open('train.pkl', 'rb') as f:
+with open('pickles/train', 'rb') as f:
     df, y = pickle.load(f)
 
 
-kf = KFold(n_splits=10)
+kf = KFold(n_splits=10, random_state=42, shuffle=True)
 X = df.to_numpy()
 for train_index, test_index in kf.split(X):
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = y[train_index], y[test_index]
-    print(np.unique(y_train, return_counts=True)[1])
-    print(np.unique(y_test, return_counts=True)[1])
 
     lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.01).fit(X_train, y_train)
     svm_clf = SVC(kernel='linear', random_state=42, C=0.01).fit(X_train, y_train)
 
     y_pred = lr_clf.predict(X_test)
-    print(f'y_test: {y_test}')
-    print(f'y_pred: {y_pred}')
+    # print(f'y_test: {y_test}')
+    # print(f'y_pred: {y_pred}')
     print(f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
-    for idx in df.iloc[test_index[y_test != y_pred]].index:
-        print(idx)
+    # for idx in df.iloc[test_index[y_test != y_pred]].index:
+    #     print(idx)
 
 
-with open('dev.pkl', 'rb') as f:
+with open('pickles/dev', 'rb') as f:
     X_test, y_test = pickle.load(f)
 
 # y_pred = lr_clf.predict(X)

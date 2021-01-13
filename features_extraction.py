@@ -6,6 +6,8 @@ import spacy
 import numpy as np
 import pickle
 from sklearn.feature_extraction import DictVectorizer
+import stanza
+import string
 
 from tqdm import tqdm
 
@@ -13,32 +15,29 @@ pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.wi
 
 def get_before_after(ent, sent):
     before = '<START>'
-    for i in range(1, len(sent)):
-        if ent.start - i > 0 and not sent[ent.start - i].is_punct:
-            before = sent[ent.start - i].text
+    for i in range(1, sent.num_words):
+        if ent.words[0].id - i - 1 > 0 and sent.sentences[0].words[ent.words[0].id - i - 1].text not in string.punctuation:
+            before = sent.sentences[0].words[ent.words[0].id - i - 1].text
             break
 
     after = '<END>'
-    for i in range(len(sent)):
-        if ent.end + i < len(sent) and not sent[ent.end + i].is_punct:
-            after = sent[ent.end + i].text
+    for i in range(sent.num_words):
+        if ent.words[-1].id + i < sent.num_words and sent.sentences[0].words[ent.words[-1].id + i].text not in string.punctuation:
+            after = sent.sentences[0].words[ent.words[-1].id + i].text
             break
     return before, after
 
-def words_between(ent1, ent2, sent):
-    words = set([w.text for w in sent[ent1.end:ent2.start] if not w.is_punct]) if len(
-        sent[ent1.end:ent2.start]) > 0 else set(['<EMPTY>'])
-    return words
 
-# def phrase_chunking(sent):
-#     np_chunks = [np for np in sent.noun_chunks]
-#     for w in sent:
-#         print(w, ent='')
-#         for np in np_chunks:
-#             if w in np:
-#                 print( 'NP', end='')
-#                 break
-#         print()
+def words_between(ent1, ent2, sent):
+    if ent1.words[0].id > ent2.words[0].id:
+        words_bw = sent.sentences[0].words[ent2.words[-1].id:ent1.words[0].id - 1]
+    else:
+        words_bw = sent.sentences[0].words[ent1.words[-1].id:ent2.words[0].id - 1]
+    if words_bw:
+        return set([w.text for w in words_bw if w.text not in string.punctuation])
+    else:
+        return set(['<EMPTY>'])
+
 
 def extract_features(ent1, ent2, sent):
     features = {}
@@ -48,7 +47,7 @@ def extract_features(ent1, ent2, sent):
     # features['ent2_head'] = ent2.root.text
     # features['ent1_ent2_head'] = ent1.root.text + " " + ent2.root.text
 
-    features['bow_ent1_ent2'] = set([w.text for w in ent1] + [w.text for w in ent2])
+    features['bow_ent1_ent2'] = set([w.text for w in ent1.tokens] + [w.text for w in ent2.tokens])
 
     features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
     features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
@@ -62,9 +61,7 @@ def extract_features(ent1, ent2, sent):
     # features['ent1_type'] = ent1.root.ent_type_
     # features['ent2_type'] = ent2.root.ent_type_
     # features['ent1_ent2_type'] = ent1.root.ent_type_ + " " + ent2.root.ent_type_
-    features['dep_path'] = dependency_path(ent1, ent2)
-
-    # phrase_chunking(sent)
+    # features['dep_path'] = dependency_path(ent1, ent2)
 
     return features
 
@@ -85,72 +82,76 @@ def dependency_path(ent1, ent2):
             break
         ent2_path.insert(0, 'OUT' + "_" + tok.dep_)
         tok = tok.head
-    if not ent1_path:
-        ent1_path.append(ent1.root.ent_type_)
-    else:
-        ent1_path[0] = ent1.root.ent_type_
-    if not ent2_path:
-        ent2_path.append(ent2.root.ent_type_)
-    else:
-        ent2_path[-1] = ent2.root.ent_type_
+
     return ent1_path + ent2_path
 
 
-nlp = spacy.load('en_core_web_lg')
-gold_annotations = read_annotations(sys.argv[2])
-print(f'{WORK_FOR} input annotations: {sum([1 if a[1] == WORK_FOR else 0 for sent_id, annots in gold_annotations.items() for a in annots])}')
+def get_y(file, df):
+    gold_annotations = read_annotations(file)
+    print(f'{WORK_FOR} input annotations: {sum([len(annotations) for annotations in gold_annotations.values()])}')
+    y = np.zeros(df.shape[0])
 
-E = []
-F = []
-y = []
-pred_annotations = []
-for sent_id, sent_str in tqdm(read_lines(sys.argv[1])):
-    # if sent_id == 'sent667':
-    #     print('aaa')
-    sent = nlp(sent_str)
-    for ent1, ent2 in itertools.combinations(sent.ents, 2):
-        if ent1.root.ent_type_ not in ENTITIES_TYPE:
-            continue
-        if ent2.root.ent_type_ not in ENTITIES_TYPE:
-            continue
-        if ent1.root.ent_type_ == ent2.root.ent_type_:
-            continue
-        features = extract_features(ent1, ent2, sent)
-        E.append(np.concatenate((ent1.vector.copy(), ent2.vector.copy())))
-        F.append(features)
+    for i, idx in enumerate(df.index):
+        sent_id, person, org, _,  = idx
 
-        related = 0
         for ann in gold_annotations[sent_id]:
-            if (ent1.root.text in ann[0] and ent2.root.text in ann[2]) or (ent2.root.text in ann[0] and ent1.root.text in ann[2]):
-                related = 1
-        y.append(related)
-
-        pred_ann = f'{sent_id}\t'\
-                   f'{ent1.text if ent1.root.ent_type_ == "PERSON" else ent2.text}\t'\
-                   f'{WORK_FOR}\t'\
-                   f'{ent1.text if ent1.root.ent_type_ == "ORG" else ent2.text}\t'\
-                   f'( {sent.text} )'
-        pred_annotations.append(pred_ann)
-
-if len(sys.argv) == 5:
-    with open(sys.argv[4], 'rb') as f:
-        v = pickle.load(f)
-    X = v.transform(F)
-else:
-    v = DictVectorizer(sparse=True)
-    X = v.fit_transform(F)
-    with open('vectorizer', 'wb') as f:
-        pickle.dump(v, f, pickle.HIGHEST_PROTOCOL)
-
-df = pd.concat([pd.DataFrame(E), pd.DataFrame(X.toarray(), columns=v.feature_names_)], axis=1)
-df.index = pred_annotations
-y = np.array(y)
-
-print(f'response varibale (y) counts:\n{np.unique(y, return_counts=True)[1]}')
-print(f'dataframe size: {df.shape}')
-
-with open(sys.argv[3], 'wb') as f:
-    pickle.dump((df, y), f, pickle.HIGHEST_PROTOCOL)
-print(f'(df, y) saved as: {sys.argv[3]}')
+            if (person in ann[0] or ann[0] in person) and (org in ann[2] or ann[2] in org):
+                y[i] = 1
+                break
+    return y
 
 
+def build_df(file, v=None):
+    # nlp = spacy.load('en_core_web_lg')
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,pos,lemma,depparse,ner', tokenize_pretokenized=True)
+
+    E = []
+    F = []
+    indices = [[], [], [], []]
+    for sent_id, sent_str in tqdm(read_lines(file)):
+        if sent_id == 'sent95':
+            print('aaa')
+        # sent = nlp(sent_str)
+        sent = nlp(sent_str, )
+        persons = [ent for ent in sent.ents if ent.type == 'PERSON']
+        orgs = [ent for ent in sent.ents if ent.type == 'ORG']
+        for p, o in itertools.product(persons, orgs):
+            features = extract_features(p, o, sent)
+            F.append(features)
+
+            # embedding = np.hstack([p.vector.copy(), o.vector.copy()])
+            # E.append(embedding)
+
+            indices[0].append(sent_id)
+            indices[1].append(p.text)
+            indices[2].append(o.text)
+            indices[3].append(f'( {sent.text} )')
+    if v:
+        X = v.transform(F)
+    else:
+        v = DictVectorizer(sparse=True)
+        X = v.fit_transform(F)
+
+    df = pd.concat([pd.DataFrame(E), pd.DataFrame(X.toarray(), columns=v.feature_names_)], axis=1)
+    df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
+
+    return df, v
+
+
+train_df, v = build_df(file='data/Corpus.TRAIN.txt')
+train_y = get_y(file='data/TRAIN.annotations', df=train_df)
+print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y==1].shape}')
+
+dev_df, v = build_df(file='data/Corpus.DEV.txt', v=v)
+dev_y = get_y(file='data/DEV.annotations', df=dev_df)
+print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y==1].shape}')
+
+with open('pickles/train', 'wb') as f:
+    pickle.dump((train_df, train_y), f, pickle.HIGHEST_PROTOCOL)
+with open('pickles/dev', 'wb') as f:
+    pickle.dump((dev_df, dev_y), f, pickle.HIGHEST_PROTOCOL)
+
+with open('data/TRAIN.annotations_work_for_pred', 'w', encoding="utf8") as f:
+    train_df['y'] = train_y
+    for idx in train_df[train_df['y']==1].index:
+        f.write(f'{idx[0]}\t{idx[1]}\tWork_For\t{idx[2]}\n')
