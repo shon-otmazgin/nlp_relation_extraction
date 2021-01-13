@@ -51,7 +51,7 @@ def extract_features(ent1, ent2, sent):
     features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
     features['words_between'] = words_between(ent1, ent2, sent)
 
-    # features['dep_path'] = dependency_path(ent1, ent2)
+    features['dep_path'] = dependency_path(ent1, ent2)
 
     return features
 
