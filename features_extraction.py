@@ -9,12 +9,9 @@ from sklearn.feature_extraction import DictVectorizer
 import stanza
 from spacy_stanza import StanzaLanguage
 import string
-
-
 from tqdm import tqdm
 
-
-
+stanza.download('en')
 
 pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
 
@@ -35,48 +32,30 @@ def get_before_after(ent, sent):
 
 
 def words_between(ent1, ent2, sent):
-    if ent1.end < ent1.start:
-        words_bw = set([w.text for w in sent[ent1.end:ent2.start] if not w.is_punct])
+    if ent1.start > ent2.start:
+        words_bw = sent[ent2.end:ent1.start]
     else:
-        words_bw = set([w.text for w in sent[ent2.end:ent1.start] if not w.is_punct])
+        words_bw = sent[ent1.end:ent2.start]
     if words_bw:
-        return words_bw
+        return [w.text for w in words_bw if not w.is_punct]
     else:
-        return set(['<EMPTY>'])
+        return ['<EMPTY>']
 
 
 def extract_features(ent1, ent2, sent):
     features = {}
 
-    # WORDS FEATURES
-    # features['ent1_head'] = ent1.root.text
-    # features['ent2_head'] = ent2.root.text
-    # features['ent1_ent2_head'] = ent1.root.text + " " + ent2.root.text
-
-    features['bow_ent1_ent2'] = set([w.text for w in ent1] + [w.text for w in ent2])
-
+    features['bow_ent1_ent2'] = [w.text for w in ent1] + [w.text for w in ent2]
     features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
     features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
-
     features['words_between'] = words_between(ent1, ent2, sent)
 
-    # features['ent1_pos'] = ent1.root.tag_
-    # features['ent2_pos'] = ent2.root.tag_
-
-    # NER FEATURES
-    # features['ent1_type'] = ent1.root.ent_type_
-    # features['ent2_type'] = ent2.root.ent_type_
-    # features['ent1_ent2_type'] = ent1.root.ent_type_ + " " + ent2.root.ent_type_
     # features['dep_path'] = dependency_path(ent1, ent2)
 
     return features
 
 
 def dependency_path(ent1, ent2):
-    # print(*[
-    #     f'id: {word.id}\tword: {word.text}\thead id: {word.head}\thead: {sent.words[word.head - 1].text if word.head > 0 else "root"}\tdeprel: {word.deprel}'
-    #     for sent in doc.sentences for word in sent.words], sep='\n')
-
     ent1_path = []
     tok = ent1.root
     while tok.dep_ != 'ROOT':
@@ -102,7 +81,7 @@ def get_y(file, df):
     y = np.zeros(df.shape[0])
 
     for i, idx in enumerate(df.index):
-        sent_id, person, org, _,  = idx
+        sent_id, person, org, _, = idx
 
         for ann in gold_annotations[sent_id]:
             if (person in ann[0] or ann[0] in person) and (org in ann[2] or ann[2] in org):
@@ -111,11 +90,52 @@ def get_y(file, df):
     return y
 
 
-def build_df(file, v=None):
-    # spa_nlp = spacy.load('en_core_web_lg')
-    stanza.download('en')
-    # nlp = stanza.Pipeline(lang='en', processors='tokenize,pos,lemma,depparse,ner', tokenize_pretokenized=True)
+from sklearn.feature_extraction.text import CountVectorizer
 
+
+# def features2vectors(F, V):
+#   ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
+#   before_ent1 = [f['before_ent1'] for f in F]
+#   after_ent2 = [f['after_ent2'] for f in F]
+#   wb_bow = [' '.join(f['words_between']) for f in F]
+#   dep_path_bow = [' '.join(f['dep_path']) for f in F]
+
+#   if not V:
+#     ent1_ent2_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(ent1_ent2_bow)
+#     before_ent1_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(before_ent1)
+#     after_ent2_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(after_ent2)
+#     wb_bow_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(1,2)).fit(wb_bow)
+#     dep_path_bow_v = CountVectorizer(analyzer = "word", binary = True, ngram_range=(2,3)).fit(dep_path_bow)
+#   else:
+#     ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow = V
+
+#   return np.hstack([ent1_ent2_v.transform(ent1_ent2_bow).toarray(), 
+#                     before_ent1_v.transform(before_ent1).toarray(), 
+#                     after_ent2_v.transform(after_ent2).toarray(), 
+#                     wb_bow_v.transform(wb_bow).toarray(),
+#                     dep_path_bow_v.transform(dep_path_bow).toarray()]), (ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v)
+
+def features2vectors(F, V):
+    ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
+    before_ent1 = [f['before_ent1'] for f in F]
+    after_ent2 = [f['after_ent2'] for f in F]
+    wb_bow = [' '.join(f['words_between']) for f in F]
+
+    if not V:
+        ent1_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(ent1_ent2_bow)
+        before_ent1_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(before_ent1)
+        after_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(after_ent2)
+        wb_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(wb_bow)
+    else:
+        ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v = V
+
+    return np.hstack([ent1_ent2_v.transform(ent1_ent2_bow).toarray(),
+                      before_ent1_v.transform(before_ent1).toarray(),
+                      after_ent2_v.transform(after_ent2).toarray(),
+                      wb_bow_v.transform(wb_bow).toarray()]), (ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v)
+
+
+def build_df(file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
 
@@ -123,10 +143,10 @@ def build_df(file, v=None):
     F = []
     indices = [[], [], [], []]
     for sent_id, sent_str in tqdm(read_lines(file)):
-        # if sent_id == 'sent420':
+        # if sent_id == 'sent95':
         #     print('aaa')
-        # spa_sent = spa_nlp(sent_str)
-        sent = nlp(sent_str)
+        # sent = nlp(sent_str)
+        sent = nlp(sent_str, )
         persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
         orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
         for p, o in itertools.product(persons, orgs):
@@ -140,32 +160,23 @@ def build_df(file, v=None):
             indices[1].append(p.text)
             indices[2].append(o.text)
             indices[3].append(f'( {sent.text} )')
-    if v:
-        X = v.transform(F)
-    else:
-        v = DictVectorizer(sparse=True)
-        X = v.fit_transform(F)
+    X, V = features2vectors(F, V)
 
-    df = pd.concat([pd.DataFrame(E), pd.DataFrame(X.toarray(), columns=v.feature_names_)], axis=1)
+    df = pd.concat([pd.DataFrame(E), pd.DataFrame(X)], axis=1)
     df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
 
-    return df, v
+    return df, V
 
 
-train_df, v = build_df(file='data/Corpus.TRAIN.txt')
+train_df, V = build_df(file='data/Corpus.TRAIN.txt', V=None)
 train_y = get_y(file='data/TRAIN.annotations', df=train_df)
-print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y==1].shape}')
+print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y == 1].shape}')
 
-dev_df, v = build_df(file='data/Corpus.DEV.txt', v=v)
+dev_df, V = build_df(file='data/Corpus.DEV.txt', V=V)
 dev_y = get_y(file='data/DEV.annotations', df=dev_df)
-print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y==1].shape}')
+print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y == 1].shape}')
 
 with open('pickles/train', 'wb') as f:
     pickle.dump((train_df, train_y), f, pickle.HIGHEST_PROTOCOL)
 with open('pickles/dev', 'wb') as f:
     pickle.dump((dev_df, dev_y), f, pickle.HIGHEST_PROTOCOL)
-
-with open('data/TRAIN.annotations_work_for_pred', 'w', encoding="utf8") as f:
-    train_df['y'] = train_y
-    for idx in train_df[train_df['y']==1].index:
-        f.write(f'{idx[0]}\t{idx[1]}\tWork_For\t{idx[2]}\n')
