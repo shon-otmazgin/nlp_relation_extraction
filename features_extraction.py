@@ -112,10 +112,10 @@ def features2vectors(F, V):
            ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v)
 
 
-def get_vectors():
+def read_vectors():
     def load_embeddings():
-        df = pd.read_csv('data/deps.words', sep=' ', index_col=0)
-        return list(df.index), np.array(df.values)
+        df = pd.read_pickle('pickles/embeddings_df')
+        return zip(list(df.index), np.array(df.values))
 
     vocab = Vocab()
     for word, vector in load_embeddings():
@@ -123,11 +123,14 @@ def get_vectors():
     return vocab
 
 
+def get_vector(span, vocab):
+    return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
+
 
 def build_df(file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    vocab = get_vectors()
+    vocab = read_vectors()
 
     E = []
     F = []
@@ -143,8 +146,8 @@ def build_df(file, V=None):
             features = extract_features(p, o, sent)
             F.append(features)
 
-            # embedding = np.hstack([p.vector.copy(), o.vector.copy()])
-            # E.append(embedding)
+            embedding = np.hstack([get_vector(p, vocab), get_vector(o, vocab)])
+            E.append(embedding)
 
             indices[0].append(sent_id)
             indices[1].append(p.text)
