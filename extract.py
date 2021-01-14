@@ -3,7 +3,7 @@ import pickle
 
 from features_extraction import build_df
 
-with open('model', 'rb') as f:
+with open('train', 'rb') as f:
     lr_clf, V, vocab = pickle.load(f)
 
 test_df, V, vocab = build_df(file=sys.argv[1], V=V, vocab=vocab)
