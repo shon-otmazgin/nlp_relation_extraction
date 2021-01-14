@@ -1,14 +1,10 @@
 import pandas as pd
 import itertools
-from utils import read_lines, ENTITIES_TYPE, stop_words, WORK_FOR, read_annotations
-import sys
-import spacy
+from utils import read_lines, WORK_FOR, read_annotations
 import numpy as np
 import pickle
-from sklearn.feature_extraction import DictVectorizer
 import stanza
 from spacy_stanza import StanzaLanguage
-import string
 from tqdm import tqdm
 from sklearn.feature_extraction.text import CountVectorizer
 from spacy.vocab import Vocab
@@ -92,7 +88,7 @@ def get_y(file, df):
     return y
 
 
-def features2vectors(F, V):
+def features2oneHot(F, V):
     ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
     before_ent1 = [f['before_ent1'] for f in F]
     after_ent2 = [f['after_ent2'] for f in F]
@@ -159,7 +155,7 @@ def build_df(file, V=None):
             indices[1].append(p.text)
             indices[2].append(o.text)
             indices[3].append(f'( {sent.text} )')
-    X, V = features2vectors(F, V)
+    X, V = features2oneHot(F, V)
 
     df = pd.concat([pd.DataFrame(E), pd.DataFrame(X)], axis=1)
     df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
