@@ -10,5 +10,5 @@ print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y 
 
 lr_clf = LogisticRegression(random_state=42, class_weight='balanced', solver='liblinear', C=0.01).fit(train_df, train_y)
 
-with open('model', 'wb') as f:
-    pickle.dump((lr_clf, V, vocab), pickle.HIGHEST_PROTOCOL)
+with open('train', 'wb') as f:
+    pickle.dump((lr_clf, V, vocab), f, pickle.HIGHEST_PROTOCOL)
