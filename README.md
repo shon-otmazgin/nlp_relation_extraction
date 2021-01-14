@@ -18,17 +18,16 @@ To train our Relation Extraction model, please run ```TrainRE.py``` with 3 files
 Example:
 ```python TrainRE.py data/Corpus.TRAIN.txt data/TRAIN.annotations data/glove.42B.300d.txt```
 
-Program's output are 2 files: ```model``` and ```vectorizer```
+Program's output are 1 file named ```train```
 
 ### Extract Relations (Inference)
-To get relations from trained model, please run ```ExtractRE.py``` with 3 files:
+To get relations from trained model, please run ```extract.py``` with 1 files:
 1. ```corpus``` file in format of ```sentid<TAB>sent```
-2. ```model``` (produced in the Train phase)
-3. ```vectorizer``` (produced in the Train phase)
-4. ```word_embeddings``` (same as used in the train phase)
 
 Example:
-```python ExtractRE.py data/Corpus.DEV.txt model vectorizer data/glove.42B.300d.txt```
+```python ExtractRE.py data/Corpus.DEV.txt```
+
+Note: ```extract.py``` assume ```train``` file exist in the content folder. Either train a model or make sure ```train``` in place
 
 Program's output is a text file named ```predicted_relation.txt``` in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
 
