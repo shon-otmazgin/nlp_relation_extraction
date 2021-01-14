@@ -3,6 +3,7 @@ import numpy as np
 import itertools
 from utils import read_lines, WORK_FOR, read_annotations
 import pickle
+import sys
 import stanza
 from spacy_stanza import StanzaLanguage
 from tqdm import tqdm
@@ -132,10 +133,15 @@ def get_vector(span, vocab):
     return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
 
 
-def build_df(file, vectors_file, V=None):
+def build_df(file, V=None, vocab=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    vocab = read_vectors(vectors_file)
+    if vocab:
+        if type(vocab) == str:
+            vocab = read_vectors(vocab)
+    else:
+        print(f'ERROR: please send with vector file or SpaCy vocab')
+        sys.exit(-1)
 
     E = []
     F = []
@@ -160,7 +166,7 @@ def build_df(file, vectors_file, V=None):
     df = pd.concat([pd.DataFrame(E), pd.DataFrame(X)], axis=1)
     df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
 
-    return df, V
+    return df, V, vocab
 
 
 # train_df, V = build_df(file='data/Corpus.TRAIN.txt', V=None, vectors_file='data/glove.42B.300d.txt')
