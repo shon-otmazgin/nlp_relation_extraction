@@ -65,16 +65,16 @@ def dependency_path(ent1, ent2):
     tok1, tok2 = ent1.root, ent2.root
     while tok1.dep_ != 'root' or tok2.dep_ != 'root':
         if tok1.dep_ != 'root':
-            ent1_path.append(tok1.text)
+            # ent1_path.append(tok1.text)
             ent1_path.append(tok1.dep_)
             tok1 = tok1.head
         if tok2.dep_ != 'root':
-            ent2_path.append(tok2.text)
+            # ent2_path.append(tok2.text)
             ent2_path.append(tok2.dep_)
             tok2 = tok2.head
         if tok1 == tok2:
             break
-    return ent1_path + [tok1.text] + ent2_path[::-1] if ent1.start < ent2.start else ent2_path + [tok1.text] + ent1_path[::-1]
+    return ent1_path + ent2_path[::-1] if ent1.start < ent2.start else ent2_path + ent1_path[::-1]
 
 
 def get_y(file, df):
@@ -130,11 +130,13 @@ def read_vectors():
 def get_vector(span, vocab):
     return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
 
+#load it once at the colab
+vocab = read_vectors()
 
 def build_df(file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    vocab = read_vectors()
+
 
     E = []
     F = []
