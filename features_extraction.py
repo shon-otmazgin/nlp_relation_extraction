@@ -10,8 +10,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from spacy.vocab import Vocab
 stanza.download('en')
 
-pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
-
 
 def get_before_after(ent, sent):
     before = '<START>'
@@ -61,11 +59,9 @@ def dependency_path(ent1, ent2):
     tok1, tok2 = ent1.root, ent2.root
     while tok1.dep_ != 'root' or tok2.dep_ != 'root':
         if tok1.dep_ != 'root':
-            # ent1_path.append(tok1.text)
             ent1_path.append(tok1.dep_)
             tok1 = tok1.head
         if tok2.dep_ != 'root':
-            # ent2_path.append(tok2.text)
             ent2_path.append(tok2.dep_)
             tok2 = tok2.head
         if tok1 == tok2:
@@ -126,21 +122,16 @@ def read_vectors():
 def get_vector(span, vocab):
     return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
 
-#load it once at the colab
-vocab = read_vectors()
 
 def build_df(file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-
+    vocab = read_vectors()
 
     E = []
     F = []
     indices = [[], [], [], []]
     for sent_id, sent_str in tqdm(read_lines(file)):
-        # if sent_id == 'sent95':
-        #     print('aaa')
-        # sent = nlp(sent_str)
         sent = nlp(sent_str)
         persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
         orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
