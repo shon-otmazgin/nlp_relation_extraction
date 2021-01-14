@@ -47,8 +47,12 @@ def extract_features(ent1, ent2, sent):
     features = {}
 
     features['bow_ent1_ent2'] = [w.text for w in ent1] + [w.text for w in ent2]
-    features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
-    features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
+    if ent1.start < ent2.start:
+        features['before_ent1'], features['after_ent1'] = get_before_after(ent1, sent)
+        features['before_ent2'], features['after_ent2'] = get_before_after(ent2, sent)
+    else:
+        features['before_ent1'], features['after_ent1'] = get_before_after(ent2, sent)
+        features['before_ent2'], features['after_ent2'] = get_before_after(ent1, sent)
     features['words_between'] = words_between(ent1, ent2, sent)
 
     features['dep_path'] = dependency_path(ent1, ent2)
