@@ -1,7 +1,7 @@
 import pandas as pd
+import numpy as np
 import itertools
 from utils import read_lines, WORK_FOR, read_annotations
-import numpy as np
 import pickle
 import stanza
 from spacy_stanza import StanzaLanguage
@@ -84,7 +84,7 @@ def get_y(file, df):
     return y
 
 
-def features2oneHot(F, V):
+def features2vectors(F, V):
     ent1_ent2_bow = [' '.join(f['bow_ent1_ent2']) for f in F]
     before_ent1 = [f['before_ent1'] for f in F]
     after_ent2 = [f['after_ent2'] for f in F]
@@ -110,8 +110,15 @@ def features2oneHot(F, V):
 
 def read_vectors(filename):
     def load_embeddings(filename):
-        df = pd.read_pickle('pickles/embeddings_df')
-        return zip(list(df.index), np.array(df.values))
+        with open(filename, encoding='utf-8') as infile:
+            for i, line in enumerate(infile):
+                items = line.rstrip().split(' ')
+                if len(items) == 2:
+                    # This is a header row giving the shape of the matrix
+                    continue
+                word = items[0]
+                vec = np.array([float(x) for x in items[1:]], 'f')
+                yield word, vec / np.linalg.norm(vec)
 
     vocab = Vocab()
     for word, vector in load_embeddings(filename):
@@ -120,19 +127,21 @@ def read_vectors(filename):
 
 
 def get_vector(span, vocab):
+    if len(span) == 0:
+        return np.zeros(300)
     return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
 
 
-def build_df(file, vector_file, V=None):
+def build_df(file, vectors_file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    vocab = read_vectors(vector_file)
+    vocab = read_vectors(vectors_file)
 
     E = []
     F = []
     indices = [[], [], [], []]
     for sent_id, sent_str in tqdm(read_lines(file)):
-        sent = nlp(sent_str)
+        sent = nlp(sent_str, )
         persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
         orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
         for p, o in itertools.product(persons, orgs):
@@ -146,7 +155,7 @@ def build_df(file, vector_file, V=None):
             indices[1].append(p.text)
             indices[2].append(o.text)
             indices[3].append(f'( {sent.text} )')
-    X, V = features2oneHot(F, V)
+    X, V = features2vectors(F, V)
 
     df = pd.concat([pd.DataFrame(E), pd.DataFrame(X)], axis=1)
     df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
@@ -154,15 +163,15 @@ def build_df(file, vector_file, V=None):
     return df, V
 
 
-train_df, V = build_df(file='data/Corpus.TRAIN.txt', vector_file='data/glove.42B.300d.txt', V=None)
-train_y = get_y(file='data/TRAIN.annotations', df=train_df)
-print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y == 1].shape}')
-
-dev_df, V = build_df(file='data/Corpus.DEV.txt', vector_file='data/glove.42B.300d.txt', V=V)
-dev_y = get_y(file='data/DEV.annotations', df=dev_df)
-print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y == 1].shape}')
-
-with open('pickles/train', 'wb') as f:
-    pickle.dump((train_df, train_y), f, pickle.HIGHEST_PROTOCOL)
-with open('pickles/dev', 'wb') as f:
-    pickle.dump((dev_df, dev_y), f, pickle.HIGHEST_PROTOCOL)
+# train_df, V = build_df(file='data/Corpus.TRAIN.txt', V=None, vectors_file='data/glove.42B.300d.txt')
+# train_y = get_y(file='data/TRAIN.annotations', df=train_df)
+# print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y == 1].shape}')
+#
+# dev_df, V = build_df(file='data/Corpus.DEV.txt', V=V, vectors_file='data/glove.42B.300d.txt')
+# dev_y = get_y(file='data/DEV.annotations', df=dev_df)
+# print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y == 1].shape}')
+#
+# with open('train', 'wb') as f:
+#     pickle.dump((train_df, train_y), f, pickle.HIGHEST_PROTOCOL)
+# with open('dev', 'wb') as f:
+#     pickle.dump((dev_df, dev_y), f, pickle.HIGHEST_PROTOCOL)
