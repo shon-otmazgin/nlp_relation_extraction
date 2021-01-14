@@ -110,13 +110,8 @@ def features2oneHot(F, V):
 
 def read_vectors(filename):
     def load_embeddings(filename):
-        with open(filename, encoding='utf-8') as infile:
-            for i, line in enumerate(infile):
-                items = line.rstrip().split(' ')
-                if len(items) == 2:
-                    # This is a header row giving the shape of the matrix
-                    continue
-                yield items[0], np.array([float(x) for x in items[1:]], 'f')
+        df = pd.read_pickle('pickles/embeddings_df')
+        return zip(list(df.index), np.array(df.values))
 
     vocab = Vocab()
     for word, vector in load_embeddings(filename):
