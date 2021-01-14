@@ -15,6 +15,8 @@ To train our Relation Extraction model, please run ```TrainRE.py``` with 3 files
 2. ```annotaion``` file in format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
 3. ```vocab``` vectors file or SpaCy Vocab with vectors. We download ```glove.42B.300d.zip``` from the [GloVe web page](https://nlp.stanford.edu/projects/glove/), and extract it into ```data/glove.42B.300d.txt```.
 
+Note: It may take a while, depending on your resources(cpu/gpu) and the size of the vectors file.
+
 Example:
 ```python TrainRE.py data/Corpus.TRAIN.txt data/TRAIN.annotations data/glove.42B.300d.txt```
 
