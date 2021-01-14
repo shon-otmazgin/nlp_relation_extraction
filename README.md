@@ -21,14 +21,16 @@ Example:
 Program's output are 2 files: ```model``` and ```vectorizer```
 
 ### Extract Relations (Inference)
-To get relations from trained model, please run ```ExtractRE.py``` with 2 files:
-1. ```model``` (produced in the Train phase)
-2. ```corpus``` file in format of ```sentid<TAB>sent```
+To get relations from trained model, please run ```ExtractRE.py``` with 3 files:
+1. ```corpus``` file in format of ```sentid<TAB>sent```
+2. ```model``` (produced in the Train phase)
+3. ```vectorizer``` (produced in the Train phase)
+4. ```word_embeddings``` (same as used in the train phase)
 
 Example:
-```python ExtractRE.py model data/Corpus.DEV.txt```
+```python ExtractRE.py data/Corpus.DEV.txt model vectorizer data/glove.42B.300d.txt```
 
-Program's output is a text file named ```predicted_relation``` in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
+Program's output is a text file named ```predicted_relation.txt``` in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
 
 ### Evaluation
 To evaluate the result with gold annotations please run ```eval.py``` with 2 files:
@@ -36,7 +38,7 @@ To evaluate the result with gold annotations please run ```eval.py``` with 2 fil
 2. predicted annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
 
 Example:
-```python eval.py data/DEV.annotations predicted_relation```
+```python eval.py data/DEV.annotations predicted_relation.txt```
 
 Program's output is the precision, recall and f1 scores.
 
