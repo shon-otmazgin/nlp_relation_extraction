@@ -20,7 +20,6 @@ for sent_id, annotations in pred_annotations.items():
             FP += 1
 
 P = TP / (TP+FP)
-print(f'Precision: {P:.3f}')
 
 TP, FN = 0, 0
 for sent_id, annotations in gold_annotations.items():
@@ -37,5 +36,6 @@ for sent_id, annotations in gold_annotations.items():
             FN += 1
 
 R = TP / (TP+FN)
+print(f'Precision: {P:.3f}')
 print(f'Recall:    {R:.3f}')
 print(f'F1:        {((2*R*P)/(P+R)):.3f}')
