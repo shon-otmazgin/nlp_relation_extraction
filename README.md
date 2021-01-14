@@ -28,12 +28,15 @@ To get relations from trained model, please run ```ExtractRE.py``` with 2 files:
 Example:
 ```python ExtractRE.py model data/Corpus.DEV.txt```
 
-Program's output is a text file in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
+Program's output is a text file named ```predicted_relation``` in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
 
 ### Evaluation
 To evaluate the result with gold annotations please run ```eval.py``` with 2 files:
-1. predicted annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
-2. gold annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
+1. gold annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>``` 
+2. predicted annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
+
+Example:
+```python eval.py data/DEV.annotations predicted_relation```
 
 Program's output is the precision, recall and f1 scores.
 
