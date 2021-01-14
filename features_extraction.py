@@ -108,13 +108,18 @@ def features2oneHot(F, V):
            ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v)
 
 
-def read_vectors():
-    def load_embeddings():
-        df = pd.read_pickle('pickles/embeddings_df')
-        return zip(list(df.index), np.array(df.values))
+def read_vectors(filename):
+    def load_embeddings(filename):
+        with open(filename, encoding='utf-8') as infile:
+            for i, line in enumerate(infile):
+                items = line.rstrip().split(' ')
+                if len(items) == 2:
+                    # This is a header row giving the shape of the matrix
+                    continue
+                yield items[0], np.array([float(x) for x in items[1:]], 'f')
 
     vocab = Vocab()
-    for word, vector in load_embeddings():
+    for word, vector in load_embeddings(filename):
         vocab.set_vector(word, vector)
     return vocab
 
@@ -123,10 +128,10 @@ def get_vector(span, vocab):
     return np.mean([vocab.get_vector(w.lemma_.lower()) for w in span], axis=0)
 
 
-def build_df(file, V=None):
+def build_df(file, vector_file, V=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    vocab = read_vectors()
+    vocab = read_vectors(vector_file)
 
     E = []
     F = []
@@ -154,11 +159,11 @@ def build_df(file, V=None):
     return df, V
 
 
-train_df, V = build_df(file='data/Corpus.TRAIN.txt', V=None)
+train_df, V = build_df(file='data/Corpus.TRAIN.txt', vector_file='data/glove.42B.300d.txt', V=None)
 train_y = get_y(file='data/TRAIN.annotations', df=train_df)
 print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y == 1].shape}')
 
-dev_df, V = build_df(file='data/Corpus.DEV.txt', V=V)
+dev_df, V = build_df(file='data/Corpus.DEV.txt', vector_file='data/glove.42B.300d.txt', V=V)
 dev_y = get_y(file='data/DEV.annotations', df=dev_df)
 print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y == 1].shape}')
 
