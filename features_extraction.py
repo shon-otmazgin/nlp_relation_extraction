@@ -136,7 +136,7 @@ def get_vector(span, vocab):
 def build_df(file, V=None, vocab=None):
     snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
     nlp = StanzaLanguage(snlp)
-    if vocab:
+    if vocab is not None:
         if type(vocab) == str:
             vocab = read_vectors(vocab)
     else:
