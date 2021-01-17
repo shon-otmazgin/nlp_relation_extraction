@@ -10,6 +10,7 @@ from tqdm import tqdm
 from sklearn.feature_extraction.text import CountVectorizer
 from spacy.vocab import Vocab
 stanza.download('en')
+stanza.download('en', processors={'ner': 'conll03'})
 
 
 def get_before_after(ent, sent):
