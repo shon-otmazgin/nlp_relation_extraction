@@ -20,18 +20,18 @@ Note: It may take a while, depending on your resources(cpu/gpu) and the size of 
 Example:
 ```python TrainRE.py data/Corpus.TRAIN.txt data/TRAIN.annotations data/glove.42B.300d.txt```
 
-Program's output are 1 file named ```train```
+Program's output is 1 pickle file named ```train```
 
 ### Extract Relations (Inference)
 To get relations from trained model, please run ```extract.py``` with 1 files:
 1. ```corpus``` file in format of ```sentid<TAB>sent```
 
-Example:
-```python ExtractRE.py data/Corpus.DEV.txt```
-
 Note: ```extract.py``` assume ```train``` file exist in the content folder. Either train a model or make sure ```train``` in place
 
 Program's output is a text file named ```predicted_relation.txt``` in the format of: ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB> ( sent )```
+
+Example:
+```python extract.py data/Corpus.DEV.txt```
 
 ### Evaluation
 To evaluate the result with gold annotations please run ```eval.py``` with 2 files:
