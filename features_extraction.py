@@ -134,7 +134,13 @@ def get_vector(span, vocab):
 
 
 def build_df(file, V=None, vocab=None):
-    snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True)
+    processor_dict = {
+        'tokenize': 'default',
+        'pos': 'default',
+        'ner': 'conll03',
+        'lemma': 'default'
+    }
+    snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True, processors=processor_dict)
     nlp = StanzaLanguage(snlp)
     if vocab is not None:
         if type(vocab) == str:
@@ -148,7 +154,7 @@ def build_df(file, V=None, vocab=None):
     indices = [[], [], [], []]
     for sent_id, sent_str in tqdm(read_lines(file)):
         sent = nlp(sent_str, )
-        persons = [ent for ent in sent.ents if ent.label_ == 'PERSON']
+        persons = [ent for ent in sent.ents if ent.label_ == 'PER']
         orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
         for p, o in itertools.product(persons, orgs):
             features = extract_features(p, o, sent)
