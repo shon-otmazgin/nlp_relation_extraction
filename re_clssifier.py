@@ -62,5 +62,41 @@ def dev(train_pkl, dev_pkl):
         f'P={precision_score(y_test, y_pred):.3f}, R={recall_score(y_test, y_pred):.3f}, F={f1_score(y_test, y_pred):.3f}')
 
 
-train('train')
-dev('train', 'dev')
+# train('train')
+# dev('train', 'dev')
+
+pd.set_option("display.max_rows", None, "display.max_columns", None, 'display.width', None)
+
+
+def double_workplace(annotations_file):
+    output_file_name = annotations_file.split('.')
+    with open(annotations_file, 'r', encoding="utf8") as in_f:
+        data = [line.strip().split('\t')[0:5] for line in in_f]
+
+
+
+    df = pd.DataFrame(data, columns=['sentid', 'per', 'rel', 'org', 'sent'])
+    gby = df.groupby(by=['sentid', 'per'])
+    for g in gby.groups:
+        db_work_df = gby.get_group(g)
+        if db_work_df.shape[0] > 1:
+            sent = db_work_df['sent'].values[0]
+            print(sent)
+            for i in db_work_df.index:
+                per, org = db_work_df.loc[i]['per'], db_work_df.loc[i]['org']
+                print(per, org)
+                template = f'{per} , a {org}'
+                if template in sent:
+                    print(True)
+                # tokens = sent.split()
+                # # sent.rfind(per)
+                # # sent.rfind(org)
+                # wb = sent[sent.rfind(per):sent.index(org)] if sent.rfind(per) < sent.index(org) else sent[sent.rfind(org):sent.index(per)]
+                # print(sent)
+                # print(per)
+                # print(wb)
+                # print(org)
+                # print('------------')
+            print()
+
+double_workplace('predicted_relation_train.txt')
