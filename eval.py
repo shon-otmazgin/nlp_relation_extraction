@@ -49,7 +49,7 @@ def get_recall(gold_annotations, pred_annotations, entirety=False):
     return TP / (TP+FN)
 
 
-print(f'Entities extracted as entirety')
+print(f'Entities extracted in entirety')
 P = get_precision(gold_annotations, pred_annotations, entirety=True)
 R = get_recall(gold_annotations, pred_annotations, entirety=True)
 print(f'Precision: {P:.3f}')
@@ -57,7 +57,7 @@ print(f'Recall:    {R:.3f}')
 print(f'F1:        {((2*R*P)/(P+R)):.3f}')
 
 print()
-print(f'Entities extracted in gold entities')
+print(f'Entities extracted in\\contained gold entities')
 P = get_precision(gold_annotations, pred_annotations, entirety=False)
 R = get_recall(gold_annotations, pred_annotations, entirety=False)
 print(f'Precision: {P:.3f}')
