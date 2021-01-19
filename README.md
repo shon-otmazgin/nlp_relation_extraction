@@ -30,7 +30,7 @@ To get relations from trained model, please run ```extract.py``` with 2 files:
 Important Note: ```extract.py``` assume ```trained_model``` file exist in the content folder. Either train a model or download pre trained model from [Here]()
 
 Example:
-```python extract.py data/Corpus.DEV.txt relations.txt```
+```python extract.py data/Corpus.DEV.txt dev_relations.txt```
 
 ### Evaluation
 To evaluate the results with gold annotations file please run ```eval.py``` with 2 files:
@@ -38,7 +38,7 @@ To evaluate the results with gold annotations file please run ```eval.py``` with
 2. predicted relations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
 
 Example:
-```python eval.py data/DEV.annotations relations.txt```
+```python eval.py data/DEV.annotations dev_relations.txt```
 
 Program's output is the precision, recall and f1 scores.
 
