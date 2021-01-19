@@ -25,20 +25,20 @@ Program's output is 1 pickle file named ```trained_model```
 ### Extract Relations (Inference)
 To get relations from trained model, please run ```extract.py``` with 2 files:
 1. ```corpus``` file in format of ```sentid<TAB>sent```
-2. ```output_file``` your desired output file name where the extracted relation will vbe written
+2. ```output_file``` your desired output file name where the extracted relation will be written
 
 Important Note: ```extract.py``` assume ```trained_model``` file exist in the content folder. Either train a model or download pre trained model from [Here]()
 
 Example:
-```python extract.py data/Corpus.DEV.txt relation.txt```
+```python extract.py data/Corpus.DEV.txt relations.txt```
 
 ### Evaluation
-To evaluate the result with gold annotations please run ```eval.py``` with 2 files:
+To evaluate the results with gold annotations file please run ```eval.py``` with 2 files:
 1. gold annotations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>``` 
 2. predicted relations in the format of ```sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>```
 
 Example:
-```python eval.py data/DEV.annotations relation.txt```
+```python eval.py data/DEV.annotations relations.txt```
 
 Program's output is the precision, recall and f1 scores.
 
