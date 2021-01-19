@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import itertools
 from utils import read_lines, WORK_FOR, read_annotations
-import pickle
 import sys
 import stanza
 from spacy_stanza import StanzaLanguage
@@ -174,17 +173,3 @@ def build_df(file, V=None, vocab=None):
     df.index = pd.MultiIndex.from_arrays(indices, names=('sent_id', 'person', 'org', 'sent'))
 
     return df, V, vocab
-
-
-# train_df, V = build_df(file='data/Corpus.TRAIN.txt', V=None, vectors_file='data/glove.42B.300d.txt')
-# train_y = get_y(file='data/TRAIN.annotations', df=train_df)
-# print(f'Train size: {train_df.shape}, y: {train_y.shape}, y=1: {train_y[train_y == 1].shape}')
-#
-# dev_df, V = build_df(file='data/Corpus.DEV.txt', V=V, vectors_file='data/glove.42B.300d.txt')
-# dev_y = get_y(file='data/DEV.annotations', df=dev_df)
-# print(f'Dev size: {dev_df.shape}, y: {dev_y.shape}, y=1: {dev_y[dev_y == 1].shape}')
-#
-# with open('train', 'wb') as f:
-#     pickle.dump((train_df, train_y), f, pickle.HIGHEST_PROTOCOL)
-# with open('dev', 'wb') as f:
-#     pickle.dump((dev_df, dev_y), f, pickle.HIGHEST_PROTOCOL)
