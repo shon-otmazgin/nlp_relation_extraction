@@ -50,7 +50,7 @@ def extract_features(ent1, ent2, sent):
         features['before_ent2'], features['after_ent2'] = get_before_after(ent1, sent)
     features['words_between'] = words_between(ent1, ent2, sent)
 
-    features['dep_path'] = dependency_path(ent1, ent2)
+    features['dep_path'] = ' '.join(dependency_path(ent1, ent2))
 
     return features
 
@@ -67,7 +67,7 @@ def dependency_path(ent1, ent2):
             tok2 = tok2.head
         if tok1 == tok2:
             break
-    return ent1_path + ent2_path[::-1] if ent1.start < ent2.start else ent2_path + ent1_path[::-1]
+    return [ent1.label_] + ent1_path + [tok1.lemma_] + ent2_path[::-1] + [ent2.label_]if ent1.start < ent2.start else [ent2.label_] + ent2_path + [tok1.lemma_] + ent1_path[::-1] + [ent1.label_]
 
 
 def get_y(file, df):
@@ -90,14 +90,14 @@ def features2vectors(F, V):
     before_ent1 = [f['before_ent1'] for f in F]
     after_ent2 = [f['after_ent2'] for f in F]
     wb_bow = [' '.join(f['words_between']) for f in F]
-    dep_path_bow = [' '.join(f['dep_path']) for f in F]
+    dep_path_bow = [f['dep_path'] for f in F]
 
     if not V:
         ent1_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(ent1_ent2_bow)
         before_ent1_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(before_ent1)
         after_ent2_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(after_ent2)
         wb_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 2)).fit(wb_bow)
-        dep_path_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(2, 4)).fit(dep_path_bow)
+        dep_path_bow_v = CountVectorizer(analyzer="word", binary=True, ngram_range=(1, 1)).fit(dep_path_bow)
     else:
         ent1_ent2_v, before_ent1_v, after_ent2_v, wb_bow_v, dep_path_bow_v = V
 
