@@ -10,9 +10,7 @@ def rule_retired(person, org, sent):
     return False
 
 
-def rule_org_s(person, org, sent):
-    with open('data/lexicon.location', 'r', encoding='utf8') as f:
-        lex_loc = set([loc.strip() for loc in f])
+def rule_org_s(person, org, sent, lex_loc):
     tokens = sent.split()
     if "'s" in tokens:
         p_idx = tokens.index(person.split()[-1])
