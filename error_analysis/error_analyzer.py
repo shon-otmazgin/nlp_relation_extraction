@@ -79,3 +79,42 @@ def eval(train_file):
 
 
 eval('../train_relations.txt')
+print()
+
+
+def rule_retired(annotations_file):
+    with open(annotations_file, 'r', encoding="utf8") as in_f:
+        for line in in_f:
+            sent_id, person, _, org, sent = line.split('\t')
+
+            tokens = sent.split()
+            if 'retired' in tokens:
+                p_idx = tokens.index(person.split()[-1])
+                o_idx = tokens.index(org.split()[-1])
+                r_idx = tokens.index('retired')
+                if (p_idx < r_idx < o_idx) or (o_idx < r_idx < p_idx):
+                    if r_idx + 2 >= o_idx:
+                        print(sent)
+
+print('RETIRED RULE')
+rule_retired('../train_relations.txt')
+
+def rule_org_s(annotations_file):
+    with open('../data/lexicon.location', 'r', encoding='utf8') as f:
+        lex_loc = set([loc.strip() for loc in f])
+    with open(annotations_file, 'r', encoding="utf8") as in_f:
+        for line in in_f:
+            sent_id, person, _, org, sent = line.split('\t')
+
+            tokens = sent.split()
+            if "'s" in tokens:
+                p_idx = tokens.index(person.split()[-1])
+                o_idx = tokens.index(org.split()[-1])
+                s_idx = tokens.index("'s")
+                if o_idx < s_idx < p_idx:
+                    if s_idx - 1 == o_idx:
+                        if org in lex_loc:
+                            print(sent)
+
+print('ORG S RULE')
+rule_org_s('../train_relations.txt')
