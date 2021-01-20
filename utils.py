@@ -1,5 +1,6 @@
 import codecs
 from collections import defaultdict
+import sys
 
 WORK_FOR = 'Work_For'
 
@@ -7,7 +8,11 @@ WORK_FOR = 'Work_For'
 def read_lines(fname):
     sentences = []
     for line in codecs.open(fname, encoding="utf8"):
-        sent_id, sent = line.strip().split("\t")
+        try:
+            sent_id, sent = line.strip().split("\t")
+        except ValueError:
+            print('ERROR: Wrong format file. expected format: sentid<TAB>sent')
+            sys.exit(-1)
         sent = sent.replace("-LRB-","(")
         sent = sent.replace("-RRB-",")")
         sentences.append((sent_id, sent))
