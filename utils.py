@@ -19,15 +19,23 @@ def read_lines(fname):
     return sentences
 
 
-def read_annotations(fname):
+def read_annotations(fname, return_sent=False):
     annotations = defaultdict(lambda: [])
     for line in codecs.open(fname, encoding="utf8"):
         try:
-            sent_id, arg1, rel, arg2 = line.strip().split("\t")[0:4]
+            if return_sent:
+                sent_id, arg1, rel, arg2, sent = line.strip().split("\t")[0:5]
+                sent = sent.replace("-LRB-", "(")
+                sent = sent.replace("-RRB-", ")")
+            else:
+                sent_id, arg1, rel, arg2 = line.strip().split("\t")[0:4]
         except ValueError:
             print('ERROR: Wrong format file.\n expected format: sentid<TAB>ent1<TAB>rel<TAB>ent2 OR sentid<TAB>ent1<TAB>rel<TAB>ent2<TAB>( sent )')
             sys.exit(-1)
         if rel != WORK_FOR:
             continue
-        annotations[sent_id].append((arg1, rel, arg2))
+        if return_sent:
+            annotations[sent_id].append((arg1, rel, arg2, sent))
+        else:
+            annotations[sent_id].append((arg1, rel, arg2))
     return annotations

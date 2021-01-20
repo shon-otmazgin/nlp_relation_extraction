@@ -8,12 +8,34 @@ from utils import read_annotations
 import random
 import pandas as pd
 
+processor_dict = {
+    'tokenize': 'default',
+    'pos': 'default',
+    'ner': 'conll03',
+    'lemma': 'default'
+}
+snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True, processors=processor_dict)
+nlp = StanzaLanguage(snlp)
+
+def get_dep_path(sent, per, org):
+    for p in [ent for ent in sent.ents if ent.label_ == 'PER']:
+        if p.text == per:
+            per = p
+            break
+    for o in [ent for ent in sent.ents if ent.label_ == 'ORG']:
+        if o.text == org:
+            org = o
+            break
+
+    return dependency_path(per, org, root_pos=True)
+
+
 def get_precision(gold_annotations, pred_annotations, entirety=False):
   per_miss = []
   TP, FP = 0, 0
   for sent_id, annotations in pred_annotations.items():
       for pred_ann in annotations:
-          per, _, org = pred_ann
+          per, _, org, sent = pred_ann
           T = False
           for glod_ann in gold_annotations[sent_id]:
               if entirety:
@@ -28,7 +50,7 @@ def get_precision(gold_annotations, pred_annotations, entirety=False):
               TP += 1
           else:
               FP += 1
-              per_miss.append((sent_id, per, org))
+              per_miss.append((sent_id, per, org, sent))
   return TP / (TP+FP), per_miss
 
 
@@ -37,7 +59,7 @@ def get_recall(gold_annotations, pred_annotations, entirety=False):
   TP, FN = 0, 0
   for sent_id, annotations in gold_annotations.items():
       for gold_ann in annotations:
-          per, _, org = gold_ann
+          per, _, org, sent = gold_ann
           T = False
           for pred_ann in pred_annotations[sent_id]:
               if entirety:
@@ -52,14 +74,14 @@ def get_recall(gold_annotations, pred_annotations, entirety=False):
               TP += 1
           else:
               FN += 1
-              recall_miss.append((sent_id, per, org))
+              recall_miss.append((sent_id, per, org, sent))
   return TP / (TP+FN), recall_miss
 
 
 def eval(train_file):
     print('TRAIN')
-    gold_annotations = read_annotations('../data/TRAIN.annotations')
-    pred_annotations = read_annotations(train_file)
+    gold_annotations = read_annotations('../data/TRAIN.annotations', return_sent=True)
+    pred_annotations = read_annotations(train_file, return_sent=True)
 
     print(f'Entities extracted as entirety')
     P, P_miss = get_precision(gold_annotations, pred_annotations, entirety=True)
@@ -79,14 +101,16 @@ def eval(train_file):
     print(f'precision miss:')
     for t in random.sample(P_miss, 5):
         print(t)
+        print(get_dep_path(sent=nlp(t[3][2:-2]), per=t[1], org=t[2]))
     print()
     print(f'recall miss:')
     for t in random.sample(R_miss, 5):
         print(t)
+        print(get_dep_path(sent=nlp(t[3][2:-2]), per=t[1], org=t[2]))
 
 
-eval('../train_relations.txt')
-print()
+# eval('../train_relations_w_rules.txt')
+# print()
 
 
 def rule_retired(annotations_file):
@@ -127,14 +151,7 @@ def rule_org_s(annotations_file):
 # rule_org_s('../train_relations.txt')
 
 
-processor_dict = {
-    'tokenize': 'default',
-    'pos': 'default',
-    'ner': 'conll03',
-    'lemma': 'default'
-}
-snlp = stanza.Pipeline(lang='en', tokenize_pretokenized=True, processors=processor_dict)
-nlp = StanzaLanguage(snlp)
+
 
 
 def double_workplace(annotations_file):
@@ -183,10 +200,12 @@ def double_workplace(annotations_file):
                 print()
 # double_workplace('../train_relations.txt')
 
-# sent = nlp('American Airlines , a unit of AMR , immediately matched the move , spokesman Tim Wagner said .')
-# persons = [ent for ent in sent.ents if ent.label_ == 'PER']
-# orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
-# print(f'persons: {persons}')
-# print(f'orgs: {orgs}')
-# for p, o in itertools.product(persons, orgs):
-#     print(dependency_path(p, o))
+sent = nlp('W. Dale Nelson covers the White House for The Associated Press .')
+persons = [ent for ent in sent.ents if ent.label_ == 'PER']
+orgs = [ent for ent in sent.ents if ent.label_ == 'ORG']
+print(f'persons: {persons}')
+print(f'orgs: {orgs}')
+for p, o in itertools.product(persons, orgs):
+    print(p, o)
+    print(dependency_path(p, o, root_pos=True))
+    print()

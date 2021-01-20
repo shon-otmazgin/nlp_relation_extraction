@@ -35,8 +35,8 @@ with open(output_file, 'w', encoding="utf8") as f:
             continue
         if not rule_org_s(person=person, org=org, sent=sent, lex_loc=lex_loc):
             continue
-        if not root_propn(sent=nlp(sent[2:-2]), per=person, org=org):
-            continue
+        # if not root_propn(sent=nlp(sent[2:-2]), per=person, org=org):
+        #     continue
         f.write(f'{sent_id}\t{person}\tWork_For\t{org}\t{sent}\n')
 
 print(f'Relation extracted to: {output_file}')
