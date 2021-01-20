@@ -55,7 +55,7 @@ def extract_features(ent1, ent2, sent):
     return features
 
 
-def dependency_path(ent1, ent2):
+def dependency_path(ent1, ent2, root_pos=False):
     ent1_path, ent2_path = [], []
     tok1, tok2 = ent1.root, ent2.root
     while tok1.dep_ != 'root' or tok2.dep_ != 'root':
@@ -67,8 +67,10 @@ def dependency_path(ent1, ent2):
             tok2 = tok2.head
         if tok1 == tok2:
             break
-    return [ent1.label_] + ent1_path + [tok1.lemma_] + ent2_path[::-1] + [ent2.label_]if ent1.start < ent2.start else [ent2.label_] + ent2_path + [tok1.lemma_] + ent1_path[::-1] + [ent1.label_]
-
+    path = [ent1.label_] + ent1_path + [tok1.lemma_] + ent2_path[::-1] + [ent2.label_]if ent1.start < ent2.start else [ent2.label_] + ent2_path + [tok1.lemma_] + ent1_path[::-1] + [ent1.label_]
+    if root_pos:
+        return path, tok1.pos_
+    return path
 
 def get_y(file, df):
     gold_annotations = read_annotations(file)
