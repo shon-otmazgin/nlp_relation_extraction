@@ -27,7 +27,7 @@ To get relations from trained model, please run ```extract.py``` with 2 files:
 1. ```corpus``` file in format of ```sentid<TAB>sent```
 2. ```output_file``` your desired output file name where the extracted relation will be written
 
-Important Note: ```extract.py``` assume ```trained_model``` file exist in the content folder. Either train a model or download pre trained model from [Here]()
+Important Note: ```extract.py``` assume ```trained_model``` file exist in the content folder. Either train a model or download pre trained model from [Here](https://drive.google.com/file/d/1MLE49Doxl7mvZop9uO4KCYuuwev12fB6/view?usp=sharing)
 
 Example:
 ```python extract.py data/Corpus.DEV.txt dev_relations.txt```
